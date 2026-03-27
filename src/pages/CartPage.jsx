@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Navbar from "../components/Navbar";
 import { useCart } from "../App";
 import {
-  ShoppingBag, Minus, Plus, X, CreditCard, ArrowLeft,
+  ShoppingBag, Minus, Plus, X, CreditCard,
 } from "lucide-react";
 
 export default function CartPage() {

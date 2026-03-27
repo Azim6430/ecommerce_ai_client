@@ -12,8 +12,13 @@ import CollectionsPage from "./pages/Collectionspage";
 import NewInPage from "./pages/Newipage";
 import SalePage from "./pages/Salepage";
 import AboutPage from "./pages/Aboutpage";
+import CartPage from "./pages/CartPage";
 
 import "./App.css";
+
+// ─── Database Keys ────────────────────────────────────────────────────────────
+const DB_KEY = "nexus_users";
+const SESSION_KEY = "nexus_session";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
 export const ThemeContext = createContext(null);
@@ -33,6 +38,14 @@ export const ThemeProvider = ({ children }) => {
       {children}
     </ThemeContext.Provider>
   );
+};
+
+// ─── Auth Context ─────────────────────────────────────────────────────────────
+export const AuthContext = createContext(null);
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 };
 
 // ─── Cart Context ─────────────────────────────────────────────────────────────
@@ -108,25 +121,51 @@ export const CartProvider = ({ children }) => {
     </CartContext.Provider>
   );
 };
-const saveUsers = (u) => localStorage.setItem(DB_KEY, JSON.stringify(u));
-const getSession = () => {
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || null; } catch { return null; }
+
+// ─── Auth Helper Functions ────────────────────────────────────────────────────
+const getUsers = () => {
+  try {
+    return JSON.parse(localStorage.getItem(DB_KEY)) || [];
+  } catch {
+    return [];
+  }
 };
+
+const saveUsers = (u) => localStorage.setItem(DB_KEY, JSON.stringify(u));
+
+const getSession = () => {
+  try {
+    return JSON.parse(localStorage.getItem(SESSION_KEY)) || null;
+  } catch {
+    return null;
+  }
+};
+
 const saveSession = (u) => localStorage.setItem(SESSION_KEY, JSON.stringify(u));
+
 const clearSession = () => localStorage.removeItem(SESSION_KEY);
+
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ─── Auth Provider ────────────────────────────────────────────────────────────
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(() => getSession());
   const [loading, setLoading] = useState(false);
 
   const register = async ({ name, email, password }) => {
-    setLoading(true); await delay(600);
+    setLoading(true);
+    await delay(600);
     const users = getUsers();
     const exists = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (exists) { setLoading(false); throw new Error("An account with this email already exists."); }
+    if (exists) {
+      setLoading(false);
+      throw new Error("An account with this email already exists.");
+    }
     const newUser = {
-      id: crypto.randomUUID(), name, email: email.toLowerCase(), password,
+      id: crypto.randomUUID(),
+      name,
+      email: email.toLowerCase(),
+      password,
       createdAt: new Date().toISOString(),
       stats: {
         projects: Math.floor(Math.random() * 8) + 1,
@@ -136,22 +175,37 @@ export const AuthProvider = ({ children }) => {
       },
     };
     saveUsers([...users, newUser]);
-    const s = { ...newUser }; delete s.password;
-    saveSession(s); setCurrentUser(s); setLoading(false); return s;
+    const s = { ...newUser };
+    delete s.password;
+    saveSession(s);
+    setCurrentUser(s);
+    setLoading(false);
+    return s;
   };
 
   const login = async ({ email, password }) => {
-    setLoading(true); await delay(600);
+    setLoading(true);
+    await delay(600);
     const users = getUsers();
     const user = users.find(
       (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
     );
-    if (!user) { setLoading(false); throw new Error("Invalid email or password. Please try again."); }
-    const s = { ...user }; delete s.password;
-    saveSession(s); setCurrentUser(s); setLoading(false); return s;
+    if (!user) {
+      setLoading(false);
+      throw new Error("Invalid email or password. Please try again.");
+    }
+    const s = { ...user };
+    delete s.password;
+    saveSession(s);
+    setCurrentUser(s);
+    setLoading(false);
+    return s;
   };
 
-  const logout = () => { clearSession(); setCurrentUser(null); };
+  const logout = () => {
+    clearSession();
+    setCurrentUser(null);
+  };
 
   return (
     <AuthContext.Provider value={{ currentUser, login, logout, register, loading }}>
@@ -160,11 +214,13 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// ─── Guest Route ──────────────────────────────────────────────────────────────
 const GuestRoute = ({ children }) => {
   const { currentUser } = useAuth();
   return currentUser ? <Navigate to="/" replace /> : children;
 };
 
+// ─── Main App Component ────────────────────────────────────────────────────────
 export default function App() {
   return (
     <ThemeProvider>
@@ -178,8 +234,22 @@ export default function App() {
               <Route path="/sale" element={<SalePage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/cart" element={<CartPage />} />
-              <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-              <Route path="/signup" element={<GuestRoute><SignupPage /></GuestRoute>} />
+              <Route
+                path="/login"
+                element={
+                  <GuestRoute>
+                    <LoginPage />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/signup"
+                element={
+                  <GuestRoute>
+                    <SignupPage />
+                  </GuestRoute>
+                }
+              />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../App";
+import { useAuth, useCart } from "../App";
 import { useTheme } from "../App";
 import {
   Zap, Sun, Moon, Menu, X, ShoppingBag, User, LogOut, ChevronDown,
@@ -17,6 +17,7 @@ const NAV_LINKS = [
 export default function Navbar() {
   const { currentUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { totalItems } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -84,10 +85,10 @@ export default function Navbar() {
             </button>
 
             {/* Cart */}
-            <button className="icon-btn nav-icon-btn cart-btn">
+            <Link to="/cart" className="icon-btn nav-icon-btn cart-btn">
               <ShoppingBag size={18} />
-              <span className="cart-count">3</span>
-            </button>
+              {totalItems > 0 && <span className="cart-count">{totalItems}</span>}
+            </Link>
 
             {/* User */}
             {currentUser ? (
